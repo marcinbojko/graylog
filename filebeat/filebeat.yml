@@ -1,0 +1,49 @@
+# traefik logs:
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/traefik/access.log
+      - /var/log/traefik/debug.log
+    # Parse json log:
+    fields_under_root: true
+    json.keys_under_root: true
+    json.add_error_key: true
+
+# Docker autodiscover provider supports hints in labels (enable when using docker logs):
+# https://www.elastic.co/guide/en/beats/filebeat/current/configuration-autodiscover-hints.html#configuration-autodiscover-hints
+#filebeat.autodiscover:
+#  providers:
+#    - type: docker
+#      hints.enabled: true
+#
+processors:
+  - add_cloud_metadata: ~
+  - add_fields:
+      target: ''
+      fields:
+        applicationName: traefik
+        id: traefik
+        traefik_version: ${TRAEFIK_TAG}
+  - rename:
+      fields:
+       - from: "source"
+         to: "file"
+      ignore_missing: true
+      fail_on_error: true
+name: ${TRAEFIK_HOSTNAME}
+tags: ["traefik2", "traefik", "graylog"]
+# logstash
+output.logstash:
+  enabled: true
+  hosts: 'graylog:5050'
+  timeout: 240
+  bulk_max_size: 128
+  ssl:
+    enabled: true
+    verification_mode: none
+    supported_protocols: TLSv1.2
+logging:
+  level: info
+  to_files: false
+  to_stderr: true

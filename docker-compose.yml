@@ -1,0 +1,215 @@
+version: "3.8"
+services:
+  traefik:
+    image: traefik:${TRAEFIK_TAG}
+    restart: unless-stopped
+    container_name: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8082:8082"
+      - "12201:12201"
+      - "5050:5050"
+      - "15514:15514"
+    networks:
+      - front
+      - back
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/etc/traefik.yml:/traefik.yml
+      - traefik_logs:/var/log/traefik
+      - traefik_acme:/etc/traefik/acme
+    labels:
+      traefik.enable: "true"
+      traefik.http.middlewares.traefik-auth.basicauth.users: 'admin:$$apr1$$Rv.Ge.aI$$17ij9Ajq8QuxXbkhMdcOv0'
+      traefik.http.routers.traefik-secure.entrypoints: https
+      traefik.http.routers.traefik-secure.rule: Host(`$TRAEFIK_HOSTNAME`, `localhost`)
+      traefik.http.routers.traefik-secure.middlewares: traefik-auth
+      traefik.http.routers.traefik-secure.tls: "true"
+      traefik.http.routers.traefik-secure.service: api@internal
+      traefik.http.services.traefik.loadbalancer.server.port: 8080
+    env_file: ./traefik/etc/cloudflare.env
+  mongodb:
+    image: mongo:${MONGO_VERSION}
+    container_name: mongodb
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - back
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'db.stats().ok' | mongo localhost:27017/test --quiet"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      traefik.enable: "false"
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ELASTIC_VERSION}
+    container_name: g2elasticsearch
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    environment:
+      - http.host=0.0.0.0
+      - network.host=0.0.0.0
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=${ES_JAVA_OPTS}"
+      - cluster.name=graylog
+      - cluster.routing.use_adaptive_replica_selection=true
+      - indices.recovery.max_bytes_per_sec=500mb
+      - discovery.seed_hosts=elastic01
+      - cluster.initial_master_nodes=elastic01
+      - node.name=elastic01
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - back
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      traefik.enable: "false"
+  graylog:
+    image: graylog/graylog:${GRAYLOG_VERSION}
+    container_name: graylog
+    volumes:
+      - graylog_journal:/usr/share/graylog/data/journal
+      - graylog_data:/usr/share/graylog/data
+      - graylog_archives:/archives
+      - graylog_shared:/data/shared
+      - graylog_geoip:/etc/graylog/server:ro
+      - ./graylog/node-id.gl2:/usr/share/graylog/data/config/node-id
+      - ./graylog/plugins/graylog-plugin-enterprise-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-4.0.1.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-integrations-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-4.0.1.jar
+      - ./graylog/plugins/graylog-plugin-integrations-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-4.0.1.jar
+      - ./graylog/plugins/metrics-reporter-prometheus-3.0.0.jar:/usr/share/graylog/plugin/metrics-reporter-prometheus-3.0.0.jar
+    env_file:
+      - ./graylog/graylog.env
+    environment:
+      - GRAYLOG_HTTP_EXTERNAL_URI=${GRAYLOG_URL}
+    depends_on:
+      - mongodb
+      - elasticsearch
+    expose:
+      # Graylog web interface and REST API
+      - "9000"
+      # Syslog TCP
+      - "1514"
+      # Syslog UDP
+      - "1514/udp"
+      # GELF TCP
+      - "12201"
+      # GELF UDP
+      - "12201/udp"
+      # GELF HTTP
+      - "12202/tcp"
+      # Beats
+      - "5050"
+      # syslog-15514
+      - "15514"
+    networks:
+      - back
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.graylog-secure.entrypoints: https
+      traefik.http.routers.graylog-secure.rule: Host(`${GRAYLOG_HOSTNAME}`)
+      traefik.http.routers.graylog-secure.tls: "true"
+      traefik.http.routers.graylog-secure.tls.domains[0].main: ${GRAYLOG_HOSTNAME}
+      traefik.http.routers.graylog-secure.tls.certresolver: letsencrypt
+      traefik.http.routers.graylog-secure.service: graylog
+      traefik.http.routers.graylog-secure.middlewares: graylog-header,graylog-header-x
+      traefik.http.middlewares.graylog-header.headers.customrequestheaders.X-Graylog-Server-URL: https://$GRAYLOG_HOSTNAME/
+      traefik.http.middlewares.graylog-header-x.headers.hostsProxyHeaders: X-Forwarded-For
+      traefik.http.services.graylog.loadbalancer.server.port: 9000
+      traefik.tcp.routers.gelf.entrypoints: gelf
+      traefik.tcp.routers.gelf.rule: HostSNI(`*`)
+      traefik.tcp.routers.gelf.tls.passthrough: "true"
+      traefik.tcp.routers.gelf.tls: "false"
+      traefik.tcp.routers.gelf.service: gelf
+      traefik.tcp.services.gelf.loadbalancer.server.port: 12201
+      traefik.tcp.routers.beats.entrypoints: beats
+      traefik.tcp.routers.beats.rule: HostSNI(`*`)
+      traefik.tcp.routers.beats.tls.passthrough: "true"
+      traefik.tcp.routers.beats.tls: "true"
+      traefik.tcp.routers.beats.service: beats
+      traefik.tcp.services.beats.loadbalancer.server.port: 5050
+      traefik.tcp.routers.syslog.entrypoints: syslog
+      traefik.tcp.routers.syslog.rule: HostSNI(`*`)
+      traefik.tcp.routers.syslog.tls.passthrough: "true"
+      traefik.tcp.routers.syslog.tls: "false"
+      traefik.tcp.routers.syslog.service: syslog
+      traefik.tcp.services.syslog.loadbalancer.server.port: 15514
+    restart: unless-stopped
+  geoip:
+    image: maxmindinc/geoipupdate:latest
+    restart: unless-stopped
+    container_name: geoip
+    networks:
+      - back
+    labels:
+      traefik.enable: "false"
+    volumes:
+      - graylog_geoip:/usr/share/GeoIP
+    env_file:
+      - ./geoip/geoip.env
+  filebeat:
+    image: docker.elastic.co/beats/filebeat-oss:${FILEBEAT_TAG}
+    user: root
+    restart: unless-stopped
+    # Disabling strict permission check:
+    # https://www.elastic.co/guide/en/beats/libbeat/6.6/config-file-permissions.html
+    command: ["--strict.perms=false"]
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock:ro
+     - traefik_logs:/var/log/traefik:ro
+     - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+     - filebeat_registry:/usr/share/filebeat/data
+    expose:
+      - "5601"
+    networks:
+      - back
+    labels:
+      traefik.enable: "false"
+    env_file:
+      - ./.env
+  ofelia:
+    image: mcuadros/ofelia:${OFELIA_TAG}
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ofelia/config.ini:/etc/config.ini
+    command:
+      - 'daemon'
+      - '--config=/etc/config.ini'
+    networks:
+      - back
+    labels:
+      traefik.enable: "false"
+volumes:
+  traefik_logs: {}
+  traefik_acme: {}
+  mongo_data: {}
+  es_data: {}
+  graylog_journal: {}
+  graylog_archives: {}
+  graylog_shared: {}
+  graylog_geoip: {}
+  graylog_data: {}
+  filebeat_registry: {}
+networks:
+  front:
+    ipam:
+      config:
+        - subnet: 172.16.220.0/24
+  back:
+    ipam:
+      config:
+        - subnet: 172.16.221.0/24

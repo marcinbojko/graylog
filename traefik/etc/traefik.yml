@@ -1,0 +1,71 @@
+global:
+  checkNewVersion: false
+log:
+  level: INFO
+  filePath: "/var/log/traefik/debug.log"
+  format: json
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+  format: json
+defaultEntryPoints:
+   - http
+   - https
+api:
+  dashboard: true
+ping: {}
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+  file:
+    filename: ./traefik.yml
+    watch: true
+entryPoints:
+  http:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+  https:
+    address: ":443"
+  metrics:
+    address: ":8082"
+  gelf:
+    address: ":12201"
+  syslog:
+    address: ":15514"
+  beats:
+    address: ":5050"
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: someemail@somedomain.com
+      storage: /etc/traefik/acme/acme.json
+      dnsChallenge:
+        # used during the challenge
+        provider: "cloudflare"
+        delaybeforecheck: 60
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      sniStrict: false
+metrics:
+  prometheus:
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5
+    entryPoint: metrics
