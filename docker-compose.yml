@@ -87,9 +87,9 @@ services:
       - graylog_shared:/data/shared
       - graylog_geoip:/etc/graylog/server:ro
       - ./graylog/node-id.gl2:/usr/share/graylog/data/config/node-id
-      - ./graylog/plugins/graylog-plugin-enterprise-4.0.2.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-4.0.2.jar
-      - ./graylog/plugins/graylog-plugin-enterprise-integrations-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-4.0.2.jar
-      - ./graylog/plugins/graylog-plugin-integrations-4.0.2.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-4.0.2.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-4.0.5.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-4.0.5.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-integrations-4.0.5.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-4.0.5.jar
+      - ./graylog/plugins/graylog-plugin-integrations-4.0.5.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-4.0.5.jar
       - ./graylog/plugins/metrics-reporter-prometheus-3.0.0.jar:/usr/share/graylog/plugin/metrics-reporter-prometheus-3.0.0.jar
     env_file:
       - ./graylog/graylog.env
