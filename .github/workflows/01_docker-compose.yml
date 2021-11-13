@@ -1,0 +1,19 @@
+name: docker-compose
+on:
+  push:
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: build
+        id: build
+        run: |
+          docker-compose --version
+          docker-compose pull
+          docker-compose up -d
+          docker-compose ps
+          sleep 120
+          docker-compose ps
+          docker-compose down --remove-orphans

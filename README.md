@@ -21,15 +21,16 @@
 #### `.env`
 
 ```ini
-ELASTIC_VERSION=7.10.2
+ELASTIC_VERSION=7.14.2
 ES_JAVA_OPTS=-Xms1g -Xmx1g
-FILEBEAT_TAG=7.11.2
+FILEBEAT_TAG=7.15.2
 GRAYLOG_HOSTNAME=graylog.somedomain.com
 GRAYLOG_URL=http://127.0.0.1:9000/
-GRAYLOG_VERSION=4.0.5-1
+GRAYLOG_VERSION=4.2.1-1
+GRAYLOG_PLUGINS=4.2.1
 MONGO_VERSION=3
-OFELIA_TAG=v0.3.4
-TRAEFIK_TAG=2.4.7
+OFELIA_TAG=v0.3.6
+TRAEFIK_TAG=2.5.4
 TRAEFIK_HOSTNAME=traefik.somedomain.com
 TZ=Europe/Copenhagen
 ```
@@ -37,6 +38,7 @@ TZ=Europe/Copenhagen
 ### Traefik dashboard
 
 Dashboard is available at localhost or [https://$TRAEFIK_HOSTNAME](https://$TRAEFIK_HOSTNAME) (.env)
+Default credentials for Traefik dashboards are: `admin:password`
 
 ### Cloudflare/Let's Encrypt
 
@@ -87,7 +89,7 @@ GRAYLOG_TRANSPORT_EMAIL_WEB_INTERFACE_URL=https://graylog.somedomain.com
 #### Default graylog dashboard password
 
 username: admin
-password: password
+password: admin
 
 ```ini
 GRAYLOG_ROOT_PASSWORD_SHA2=8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
@@ -128,7 +130,7 @@ To provide your own certificates mount cert and key file into docker graylog vol
 
 #### Plugins
 
-Everytime you're changing Graylog version (in .env file)  you should also change plugins in /gralog/plugins/ and `docker-compose` graylog section.
+Everytime you're changing Graylog version (in .env file)  you should also change plugins in /gralog/plugins/ and `docker-compose` graylog section. Use `${GRAYLOG_PLUGINS}` variable to manage plugin versions
 
 ```yaml
   graylog:
@@ -141,9 +143,11 @@ Everytime you're changing Graylog version (in .env file)  you should also change
       - graylog_shared:/data/shared
       - graylog_geoip:/etc/graylog/server:ro
       - ./graylog/node-id.gl2:/usr/share/graylog/data/config/node-id
-      - ./graylog/plugins/graylog-plugin-enterprise-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-4.0.1.jar
-      - ./graylog/plugins/graylog-plugin-enterprise-integrations-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-4.0.1.jar
-      - ./graylog/plugins/graylog-plugin-integrations-4.0.1.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-4.0.1.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-es6-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-es6-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-es7-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-es7-${GRAYLOG_PLUGINS}.jar
       - ./graylog/plugins/metrics-reporter-prometheus-3.0.0.jar:/usr/share/graylog/plugin/metrics-reporter-prometheus-3.0.0.jar
 ```
 
