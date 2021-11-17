@@ -1,5 +1,9 @@
 # Changelog
 
+## 2021-11-17 1.1.1
+
+* change graylog image to `jre11` version
+
 ## 2021-11-13 1.1.0
 
 * bump to `graylog` 4.2.1-1
