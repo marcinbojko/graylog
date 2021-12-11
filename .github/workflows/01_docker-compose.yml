@@ -10,10 +10,13 @@ jobs:
       - name: build
         id: build
         run: |
+          echo "127.0.0.1  graylog.somedomain.com"
+          sudo apt-get install httpie -y
           docker-compose --version
           docker-compose pull
           docker-compose up -d
           docker-compose ps
           sleep 120
+          http HEAD https://graylog.somedomain.com --follow --verify=false --verbose --pretty=none
           docker-compose ps
           docker-compose down --remove-orphans

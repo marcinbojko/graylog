@@ -1,5 +1,12 @@
 # Changelog
 
+## 2021-12-11 1.2.0
+
+* bump `graylog` to version 4.2.3-1 due to [https://nvd.nist.gov/vuln/detail/CVE-2021-44228](https://nvd.nist.gov/vuln/detail/CVE-2021-44228)
+* bump `elasticsearch` and `filebeat` to version 7.16.0
+* bump to `traefik` 2.5.5
+* added `Dlog4j2.formatMsgNoLookups=true` to `ES_JAVA_OPTS`
+
 ## 2021-11-17 1.1.1
 
 * change graylog image to `jre11` version
