@@ -1,5 +1,9 @@
 # Changelog
 
+## 2021-12-13 1.2.1
+
+* bump `elasticsearch` and `filebeat` to version 7.16.1
+
 ## 2021-12-11 1.2.0
 
 * bump `graylog` to version 4.2.3-1 due to [https://nvd.nist.gov/vuln/detail/CVE-2021-44228](https://nvd.nist.gov/vuln/detail/CVE-2021-44228)
