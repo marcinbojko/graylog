@@ -1,5 +1,9 @@
 # Changelog
 
+## 2021-12-17 1.2.2
+
+* bump `graylog` to version 4.2.4-1
+
 ## 2021-12-13 1.2.1
 
 * bump `elasticsearch` and `filebeat` to version 7.16.1
