@@ -1,5 +1,12 @@
 # Changelog
 
+## 2022-02-17 1.2.3
+
+* bump `graylog` to version 4.2.6-1-jre11
+* bump `traefik` to version 2.6.1
+* bump `elasticsearch` to version 7.16.3
+* bump `filebeat` to version 7.16.3
+
 ## 2021-12-17 1.2.2
 
 * bump `graylog` to version 4.2.4-1
