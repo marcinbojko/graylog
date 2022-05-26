@@ -21,16 +21,16 @@
 #### `.env`
 
 ```ini
-ELASTIC_VERSION=7.16.1
+ELASTIC_VERSION=7.17.4
 ES_JAVA_OPTS=-Xms1g -Xmx1g -Dlog4j2.formatMsgNoLookups=true
-FILEBEAT_TAG=7.16.1
+FILEBEAT_TAG=7.17.4
 GRAYLOG_HOSTNAME=graylog.somedomain.com
 GRAYLOG_URL=http://127.0.0.1:9000/
-GRAYLOG_VERSION=4.2.4-1-jre11
-GRAYLOG_PLUGINS=4.2.4
+GRAYLOG_VERSION=4.3.0-1-jre11
+GRAYLOG_PLUGINS=4.3.0
 MONGO_VERSION=3
 OFELIA_TAG=v0.3.6
-TRAEFIK_TAG=2.5.5
+TRAEFIK_TAG=2.7.0
 TRAEFIK_HOSTNAME=traefik.somedomain.com
 TZ=Europe/Warsaw
 ```
@@ -107,7 +107,8 @@ Opened ports:
 |----|----------------|-----------|
 |80|80|http|
 |443|443|https|
-|12201|12201|GELF TCP/UDP|
+|12201|12201|GELF HTTP|
+|12202|12202|GELF TCP/UDP|
 |15514|15514|Syslog TCP/UDP|
 |5050|5050|Beats|
 |----|----------------|-----------|
@@ -144,10 +145,15 @@ Everytime you're changing Graylog version (in .env file)  you should also change
       - graylog_geoip:/etc/graylog/server:ro
       - ./graylog/node-id.gl2:/usr/share/graylog/data/config/node-id
       - ./graylog/plugins/graylog-plugin-enterprise-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar
       - ./graylog/plugins/graylog-plugin-enterprise-es6-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-es6-${GRAYLOG_PLUGINS}.jar
       - ./graylog/plugins/graylog-plugin-enterprise-es7-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-es7-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-aws-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-aws-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-collector-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-collector-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-plugin-threatintel-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-threatintel-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-storage-elasticsearch6-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-storage-elasticsearch6-${GRAYLOG_PLUGINS}.jar
+      - ./graylog/plugins/graylog-storage-elasticsearch7-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-storage-elasticsearch7-${GRAYLOG_PLUGINS}.jar
       - ./graylog/plugins/metrics-reporter-prometheus-3.0.0.jar:/usr/share/graylog/plugin/metrics-reporter-prometheus-3.0.0.jar
 ```
 

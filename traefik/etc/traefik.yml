@@ -33,6 +33,8 @@ entryPoints:
     address: ":8082"
   gelf:
     address: ":12201"
+  gelf-tcp:
+    address: ":12202"
   syslog:
     address: ":15514"
   beats:
