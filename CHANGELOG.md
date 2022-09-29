@@ -1,11 +1,19 @@
 # Changelog
 
+## 2022-09-29 1.4.0
+
+* bump `elasticsearch` to version 7.17.6
+* bump `filebeat` to version 7.17.6
+* bump `traefik` to version 2.8.7
+* introduce `${GEOIP_TAG}` for `maxmindinc/geoipupdate` image
+
 ## 2022-05-26 1.3.0
 
 * bump `elasticsearch` to version 7.17.4
 * bump `filebeat` to version 7.17.4
 * bump `traefik` to version 2.7.0
 * bump `graylog` to version 4.3.0-1-jre11
+
 ## 2022-02-17 1.2.3
 
 * bump `graylog` to version 4.2.6-1-jre11

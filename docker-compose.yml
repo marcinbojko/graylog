@@ -169,7 +169,7 @@ services:
       traefik.tcp.services.syslog.loadbalancer.server.port: 15514
     restart: unless-stopped
   geoip:
-    image: maxmindinc/geoipupdate:latest
+    image: maxmindinc/geoipupdate:${GEOIP_TAG}
     restart: unless-stopped
     container_name: geoip
     networks:
