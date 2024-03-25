@@ -39,6 +39,13 @@ entryPoints:
     address: ":15514"
   beats:
     address: ":5050"
+  beats-sidecars:
+    address: ":5044"
+  opensearch:
+    address: ":9200"
+  opensearch-seed:
+    address: ":9300"
+
 certificatesResolvers:
   letsencrypt:
     acme:
@@ -51,6 +58,22 @@ certificatesResolvers:
         resolvers:
           - "1.1.1.1:53"
           - "8.8.8.8:53"
+http:
+  middlewares:
+    hsts-header:
+      headers:
+        customResponseHeaders:
+          Strict-Transport-Security: max-age=63072000
+        stsseconds: 63072000
+        stspreload: true
+        stsincludesubdomains: false
+    whitelist:
+      ipWhitelist:
+        sourcerange:
+          - 127.0.0.1/32
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
 tls:
   options:
     default:

@@ -47,26 +47,34 @@ services:
     restart: unless-stopped
     labels:
       traefik.enable: "false"
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
-    container_name: g2elasticsearch
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
+  opensearch:
+    image: opensearchproject/opensearch:${OPENSEARCH_VERSION}
+    container_name: g2opensearch
     environment:
+      - "OPENSEARCH_JAVA_OPTS=${ES_JAVA_OPTS}"
+      - "bootstrap.memory_lock=true"
+      - "action.auto_create_index=false"
+      - "plugins.security.ssl.http.enabled=false"
+      - "plugins.security.disabled=true"
       - http.host=0.0.0.0
       - network.host=0.0.0.0
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=${ES_JAVA_OPTS}"
+      - transport.port=9300
       - cluster.name=graylog
       - cluster.routing.use_adaptive_replica_selection=true
       - indices.recovery.max_bytes_per_sec=500mb
-      - discovery.seed_hosts=elastic01
-      - cluster.initial_master_nodes=elastic01
-      - node.name=elastic01
+      - discovery.seed_hosts=g2opensearch
+      - cluster.initial_master_nodes=g2opensearch
+      - node.name=g2opensearch
     ulimits:
       memlock:
-        soft: -1
         hard: -1
+        soft: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - "os_data:/usr/share/opensearch/data"
+    restart: unless-stopped
     networks:
       - back
     healthcheck:
@@ -75,11 +83,24 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: unless-stopped
     labels:
-      traefik.enable: "false"
+      traefik.enable: "true"
+      traefik.http.routers.opensearch.entrypoints: opensearch
+      traefik.http.routers.opensearch.rule: Host(`${OPENSEARCH_HOSTNAME}`)
+      traefik.http.routers.opensearch.tls: "true"
+      traefik.http.routers.opensearch.tls.domains[0].main: ${OPENSEARCH_HOSTNAME}
+      traefik.http.routers.opensearch.tls.certresolver: letsencrypt
+      traefik.http.routers.opensearch.service: opensearch
+      traefik.http.routers.opensearch.middlewares: whitelist@file
+      traefik.http.services.opensearch.loadbalancer.server.port: 9200
+      traefik.tcp.routers.elastic-seed.entrypoints: opensearch-seed
+      traefik.tcp.routers.elastic-seed.rule: HostSNI(`*`)
+      traefik.tcp.routers.elastic-seed.tls.passthrough: "true"
+      traefik.tcp.routers.elastic-seed.tls: "false"
+      traefik.tcp.routers.elastic-seed.service: opensearch-seed
+      traefik.tcp.services.opensearch-seed.loadbalancer.server.port: 9300
   graylog:
-    image: graylog/graylog:${GRAYLOG_VERSION}
+    image: graylog/graylog-enterprise:${GRAYLOG_VERSION}
     container_name: graylog
     volumes:
       - graylog_journal:/usr/share/graylog/data/journal
@@ -87,17 +108,9 @@ services:
       - graylog_archives:/archives
       - graylog_shared:/data/shared
       - graylog_geoip:/etc/graylog/server:ro
+      - ./traefik/ssl/wildcard.home.lan.key:/etc/ssl/wildcard.home.lan.key:ro
+      - ./traefik/ssl/wildcard.home.lan.pem:/etc/ssl/wildcard.home.lan.pem:ro
       - ./graylog/node-id.gl2:/usr/share/graylog/data/config/node-id
-      - ./graylog/plugins/graylog-plugin-enterprise-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-enterprise-es6-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-es6-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-enterprise-es7-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-es7-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-enterprise-integrations-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-integrations-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-aws-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-aws-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-collector-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-collector-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-plugin-threatintel-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-plugin-threatintel-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-storage-elasticsearch6-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-storage-elasticsearch6-${GRAYLOG_PLUGINS}.jar
-      - ./graylog/plugins/graylog-storage-elasticsearch7-${GRAYLOG_PLUGINS}.jar:/usr/share/graylog/plugin/graylog-storage-elasticsearch7-${GRAYLOG_PLUGINS}.jar
       - ./graylog/plugins/metrics-reporter-prometheus-3.0.0.jar:/usr/share/graylog/plugin/metrics-reporter-prometheus-3.0.0.jar
     env_file:
       - ./graylog/graylog.env
@@ -105,7 +118,7 @@ services:
       - GRAYLOG_HTTP_EXTERNAL_URI=${GRAYLOG_URL}
     depends_on:
       - mongodb
-      - elasticsearch
+      - opensearch
     expose:
       # Graylog web interface and REST API
       - "9000"
@@ -114,21 +127,15 @@ services:
       # Syslog UDP
       - "1514/udp"
       # GELF TCP
-      - "12202"
+      - "12201"
       # GELF UDP
-      - "12202/udp"
+      - "12201/udp"
       # GELF HTTP
-      - "12201/tcp"
+      - "12202/tcp"
       # Beats
       - "5050"
       # syslog-15514
       - "15514"
-    healthcheck:
-      test: ["CMD-SHELL", "curl --silent --fail localhost:9000/api/system/lbstatus || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
     networks:
       - back
     labels:
@@ -139,7 +146,7 @@ services:
       traefik.http.routers.graylog-secure.tls.domains[0].main: ${GRAYLOG_HOSTNAME}
       traefik.http.routers.graylog-secure.tls.certresolver: letsencrypt
       traefik.http.routers.graylog-secure.service: graylog
-      traefik.http.routers.graylog-secure.middlewares: graylog-header,graylog-header-x
+      traefik.http.routers.graylog-secure.middlewares: graylog-header,graylog-header-x,whitelist@file
       traefik.http.middlewares.graylog-header.headers.customrequestheaders.X-Graylog-Server-URL: https://$GRAYLOG_HOSTNAME/
       traefik.http.middlewares.graylog-header-x.headers.hostsProxyHeaders: X-Forwarded-For
       traefik.http.services.graylog.loadbalancer.server.port: 9000
@@ -161,6 +168,12 @@ services:
       traefik.tcp.routers.beats.tls: "true"
       traefik.tcp.routers.beats.service: beats
       traefik.tcp.services.beats.loadbalancer.server.port: 5050
+      traefik.tcp.routers.beats-sidecars.entrypoints: beats-sidecars
+      traefik.tcp.routers.beats-sidecars.rule: HostSNI(`*`)
+      traefik.tcp.routers.beats-sidecars.tls.passthrough: "true"
+      traefik.tcp.routers.beats-sidecars.tls: "true"
+      traefik.tcp.routers.beats-sidecars.service: beats-sidecars
+      traefik.tcp.services.beats-sidecars.loadbalancer.server.port: 5044
       traefik.tcp.routers.syslog.entrypoints: syslog
       traefik.tcp.routers.syslog.rule: HostSNI(`*`)
       traefik.tcp.routers.syslog.tls.passthrough: "true"
@@ -168,6 +181,7 @@ services:
       traefik.tcp.routers.syslog.service: syslog
       traefik.tcp.services.syslog.loadbalancer.server.port: 15514
     restart: unless-stopped
+
   geoip:
     image: maxmindinc/geoipupdate:${GEOIP_TAG}
     restart: unless-stopped
@@ -219,7 +233,7 @@ volumes:
   traefik_logs: {}
   traefik_acme: {}
   mongo_data: {}
-  es_data: {}
+  os_data: {}
   graylog_journal: {}
   graylog_archives: {}
   graylog_shared: {}

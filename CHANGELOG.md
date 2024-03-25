@@ -1,5 +1,10 @@
 # Changelog
 
+## 2024-02-29 2.0.0
+
+* **BREAKING CHANGE** - switch from `elasticsearch` into `opensearch` due to graylog dependency. This change is not backward compatible. You'll loose all your data if you upgrade from `1.x` to `2.x`.
+* **BREAKING CHANGE** - You'll need to delete all existing volumes (elasticsearch, graylog and mongodb) before you start the new version.
+
 ## 2022-09-29 1.4.0
 
 * bump `elasticsearch` to version 7.17.6

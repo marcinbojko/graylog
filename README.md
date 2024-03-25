@@ -1,18 +1,65 @@
 # Simple one node Graylog setup with Traefik, Cloudflare/Let's Encrypt, Filebeat  GELF/SYSLOG/BEATS support, and GeoIP updates
 
-[![Build Status](https://travis-ci.com/marcinbojko/graylog.svg?branch=main)](https://travis-ci.com/marcinbojko/graylog.svg?branch=main)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/marcinbojko)
+
+Consider buying me a coffee if you like my work. All donations are appreciated. All donations will be used to pay for pipeline running costs
 
 ## What for
 
 - Tests
 - More Tests
-- Graylog Enterprise non-prod (Graylog license below 5 GB Day is free)
+- Graylog Enterprise non-prod (Graylog license below 2 GB Day is free)
 - Restore of archives created with Graylog Enterprise (long term storage)
 - Back/front separation with Traefik as loadbalancer/proxy
 - can be easy reworked into multiple node setup
 - Filebeat example can be easily replicated to smaller non-prod setups
 
-![image](images/network_diagram.png)
+## Network diagram
+
+```mermaid
+graph LR
+    subgraph SERVICES
+        HTTP
+        HTTPS
+        GELF_TCP
+        GELF_HTTP
+        SYSLOG
+        BEATS
+        BEATS_SIDECARS
+        OPENSEARCH_HTTP
+        OPENSEARCH_SEED
+    end
+
+    subgraph FRONT
+        TRAEFIK
+    end
+
+    subgraph " "
+        HTTP --> |TCP/80| TRAEFIK
+        HTTPS --> |TCP/443| TRAEFIK
+        GELF_TCP --> |TCP/12202| TRAEFIK
+        GELF_HTTP --> |TCP/12201| TRAEFIK
+        SYSLOG --> |TCP/15514, UDP/15514| TRAEFIK
+        BEATS --> |TCP/5040| TRAEFIK
+        BEATS_SIDECARS --> |TCP/5050| TRAEFIK
+        OPENSEARCH_HTTP --> |TCP/9200| TRAEFIK
+        OPENSEARCH_SEED --> |TCP/9300| TRAEFIK
+    end
+
+    subgraph BACK
+        GRAYLOG --> |TCP/9200| OPENSEARCH
+        GRAYLOG --> MONGODB
+        GRAYLOG --> GEOIP
+        OFELIA
+        FILEBEAT
+    end
+
+    TRAEFIK --> |TCP/443, TCP12202,
+    TCP/12201, TCP/12202, TCP/5050, TCP/5040
+    TCP1514/UDP1514,| GRAYLOG
+    TRAEFIK --> |TCP/9200,TCP/9300| OPENSEARCH
+
+```
 
 ## Credentials to set
 
